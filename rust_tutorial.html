@@ -51,6 +51,12 @@
   }
   nav.toc li a::before { counter-increment: step; content: counter(step) ". "; color: var(--rust); font-weight: 700; }
   nav.toc li a:hover { color: var(--text); background: var(--card); }
+  nav.toc li a.active {
+    color: var(--text); background: var(--card);
+    border-left: 2px solid var(--rust); padding-left: 6px;
+    font-weight: 600;
+  }
+  nav.toc li a.active::before { color: var(--text); }
   nav.toc .group-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 16px 0 8px; }
   /* main */
   main { padding: 48px 56px 120px; max-width: 880px; }
@@ -1014,5 +1020,67 @@ legfontosabb fogalmait:</p>
 </main>
 
 </div>
+<script>
+(function () {
+  // Scroll-spy: a TOC-ban azt a linket jelöli aktívként, amelyik
+  // szakasz fejléce (h2.section) a viewport felső ~30%-a felett van,
+  // de a következő még nem.
+  var links = Array.prototype.slice.call(
+    document.querySelectorAll('nav.toc a[href^="#s"]')
+  );
+  var sections = [];
+  var linkById = {};
+  links.forEach(function (a) {
+    var id = a.getAttribute('href').slice(1);
+    var sec = document.getElementById(id);
+    if (sec) { sections.push(sec); linkById[id] = a; }
+  });
+  if (!sections.length) return;
+
+  var nav = document.querySelector('nav.toc');
+  var ticking = false;
+
+  function setActive(sec) {
+    if (!sec) return;
+    var link = linkById[sec.id];
+    if (!link || link.classList.contains('active')) return;
+    links.forEach(function (l) { l.classList.remove('active'); });
+    link.classList.add('active');
+    // Ha kilóg a TOC-ból, görgetjük a nézetbe (csak ha szükséges).
+    var r = link.getBoundingClientRect();
+    var nr = nav.getBoundingClientRect();
+    if (r.top < nr.top || r.bottom > nr.bottom) {
+      link.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+
+  function update() {
+    var line = window.innerHeight * 0.3; // marker 30%-nál
+    var active = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top <= line) active = sections[i];
+      else break;
+    }
+    // Oldal alján az utolsó szakasz.
+    if (window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 2) {
+      active = sections[sections.length - 1];
+    }
+    setActive(active);
+    ticking = false;
+  }
+
+  function onScroll() {
+    if (!ticking) {
+      window.requestAnimationFrame(update);
+      ticking = true;
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  update();
+})();
+</script>
 </body>
 </html>
