@@ -1,0 +1,28 @@
+[package]
+name = "keepawake"
+version = "0.1.0"
+edition = "2021"
+description = "macOS utility ami IOKit power assertion-nel ébren tartja a gépet, tray ikonnal."
+license = "MIT"
+
+[[bin]]
+name = "keepawake"
+path = "src/main.rs"
+
+[dependencies]
+tao = "0.35"
+tray-icon = "0.24"
+image = "0.25"
+core-foundation = "0.10"
+libc = "0.2"
+ctrlc = "3"
+
+# macOS-only binary; nincs értelme más platformra fordítani ebben a milestone-ban.
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+# (üres szándékosan)
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
