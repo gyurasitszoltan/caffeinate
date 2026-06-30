@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rust kezdőknek — a KeepAwake projekten keresztül</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1115;
+    --bg-soft: #161a21;
+    --card: #1b2029;
+    --border: #2a313d;
+    --text: #e6e9ef;
+    --muted: #9aa4b2;
+    --rust: #d97757;
+    --rust-soft: #f2a98a;
+    --accent: #6cb6ff;
+    --green: #7ec88b;
+    --yellow: #e3c46b;
+    --code-bg: #0c0e12;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 16px;
+  }
+  /* layout */
+  .layout { display: grid; grid-template-columns: 280px 1fr; max-width: 1400px; margin: 0 auto; }
+  /* sidebar */
+  nav.toc {
+    position: sticky; top: 0; align-self: start;
+    height: 100vh; overflow-y: auto;
+    padding: 28px 20px; border-right: 1px solid var(--border);
+    background: var(--bg-soft);
+    font-size: 14px;
+  }
+  nav.toc h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--rust-soft); margin: 0 0 14px; }
+  nav.toc { counter-reset: step; }
+  nav.toc ol { list-style: none; padding: 0; margin: 0 0 22px; }
+  nav.toc li { margin: 6px 0; }
+  nav.toc li a {
+    color: var(--muted); text-decoration: none; display: block;
+    padding: 5px 8px; border-radius: 6px; transition: all .15s;
+  }
+  nav.toc li a::before { counter-increment: step; content: counter(step) ". "; color: var(--rust); font-weight: 700; }
+  nav.toc li a:hover { color: var(--text); background: var(--card); }
+  nav.toc .group-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 16px 0 8px; }
+  /* main */
+  main { padding: 48px 56px 120px; max-width: 880px; }
+  header.hero {
+    padding-bottom: 32px; margin-bottom: 36px;
+    border-bottom: 1px solid var(--border);
+  }
+  header.hero h1 { font-size: 34px; margin: 0 0 10px; line-height: 1.2; }
+  header.hero h1 .rust { color: var(--rust); }
+  header.hero p { color: var(--muted); font-size: 17px; margin: 8px 0 0; max-width: 60ch; }
+  .badges { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    font-size: 12px; padding: 4px 10px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--border); color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  h2.section {
+    font-size: 26px; margin: 56px 0 18px; padding-top: 18px;
+    border-top: 1px solid var(--border); scroll-margin-top: 20px;
+  }
+  h2.section .num { color: var(--rust); font-family: 'JetBrains Mono', monospace; margin-right: 10px; }
+  h3 { font-size: 19px; margin: 28px 0 10px; color: var(--rust-soft); }
+  p { margin: 12px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 6px 0; }
+  code {
+    font-family: 'JetBrains Mono', monospace; font-size: .88em;
+    background: var(--card); padding: 2px 6px; border-radius: 4px;
+    color: var(--rust-soft); border: 1px solid var(--border);
+  }
+  /* code blocks */
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px; overflow-x: auto;
+    margin: 16px 0; font-size: 13.5px; line-height: 1.55;
+  }
+  pre code {
+    font-family: 'JetBrains Mono', monospace; background: none;
+    border: none; padding: 0; color: var(--text); font-size: inherit;
+  }
+  /* syntax highlight */
+  .kw { color: #ff9d6c; }       /* keyword */
+  .ty { color: #6cb6ff; }       /* type */
+  .fn { color: #e3c46b; }       /* function name */
+  .str { color: #98c379; }      /* string */
+  .num { color: #d19a66; }      /* number */
+  .com { color: #5c6370; font-style: italic; } /* comment */
+  .mac { color: #c678dd; }      /* macro / attribute */
+  .punct { color: #9aa4b2; }
+  .self { color: #e5c07b; }
+
+  /* callouts */
+  .callout {
+    border-left: 3px solid; border-radius: 8px; padding: 14px 18px;
+    margin: 18px 0; background: var(--bg-soft);
+  }
+  .callout.info { border-color: var(--accent); }
+  .callout.tip { border-color: var(--green); }
+  .callout.warn { border-color: var(--yellow); }
+  .callout .label {
+    font-size: 12px; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; margin-bottom: 6px; display: block;
+  }
+  .callout.info .label { color: var(--accent); }
+  .callout.tip .label { color: var(--green); }
+  .callout.warn .label { color: var(--yellow); }
+
+  .terminal {
+    background: #0c0e12; border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 18px; font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px; color: var(--green); margin: 14px 0;
+  }
+  .terminal .prompt { color: var(--rust); }
+  .terminal .out { color: var(--muted); }
+
+  table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+  th { background: var(--bg-soft); color: var(--rust-soft); font-weight: 600; }
+  td code { font-size: 12px; }
+
+  .file-header {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    color: var(--muted); margin: 22px 0 -4px;
+  }
+  .file-header .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--rust); }
+  .file-header .path { color: var(--rust-soft); font-weight: 600; }
+
+  .step-nav {
+    display: flex; justify-content: space-between; gap: 12px;
+    margin: 40px 0 0; padding-top: 20px; border-top: 1px solid var(--border);
+  }
+  .step-nav a {
+    color: var(--muted); text-decoration: none; font-size: 14px;
+    padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg-soft); transition: all .15s;
+  }
+  .step-nav a:hover { color: var(--text); border-color: var(--rust); }
+  .step-nav a .arrow { color: var(--rust); margin: 0 6px; }
+
+  /* diagram */
+  .arch {
+    background: var(--bg-soft); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; margin: 18px 0;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    overflow-x: auto; white-space: pre; color: var(--muted);
+  }
+  .arch b { color: var(--rust-soft); }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 28px 18px 80px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc">
+  <h2>KeepAwake tutorial</h2>
+  <div class="group-title">Alapok</div>
+  <ol>
+    <li><a href="#s1">Mi az a Rust?</a></li>
+    <li><a href="#s2">Telepítés &amp; Cargo</a></li>
+    <li><a href="#s3">Hello, Rust!</a></li>
+  </ol>
+  <div class="group-title">A projekt</div>
+  <ol>
+    <li><a href="#s4">A KeepAwake project</a></li>
+    <li><a href="#s5">Cargo.toml</a></li>
+    <li><a href="#s6">Modulok</a></li>
+  </ol>
+  <div class="group-title">Kód lépésről lépésre</div>
+  <ol>
+    <li><a href="#s7">Állapotmodell — app_state.rs</a></li>
+    <li><a href="#s8">Időzítő — timer.rs</a></li>
+    <li><a href="#s9">Ikonok — icons.rs</a></li>
+    <li><a href="#s10">FFI — awake.rs</a></li>
+    <li><a href="#s11">Menü — tray.rs</a></li>
+    <li><a href="#s12">Event loop — main.rs</a></li>
+  </ol>
+  <div class="group-title">Lezárás</div>
+  <ol>
+    <li><a href="#s13">Tesztelés</a></li>
+    <li><a href="#s14">Összegzés</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<header class="hero">
+  <h1>Rust <span class="rust">kezdőknek</span> — a KeepAwake projekten keresztül</h1>
+  <p>Egy lépésről lépésre haladó tutorial, ami nulláról indul, és egy valós macOS
+  menüsor-alkalmazás (egy kávéscsésze ikonnal ébren tartott gép) forráskódját
+  magyarázza el kódonként.</p>
+  <div class="badges">
+    <span class="badge">Rust 2021 edition</span>
+    <span class="badge">macOS / IOKit</span>
+    <span class="badge">FFI</span>
+    <span class="badge">tao + tray-icon</span>
+  </div>
+</header>
+
+<!-- ════════════════ 1 ════════════════ -->
+<h2 class="section" id="s1"><span class="num">1.</span>Mi az a Rust?</h2>
+<p>A Rust egy modern, rendszerprogramozási nyelv, amit a Mozilla indított 2010-ben.
+Két fő célja van:</p>
+<ul>
+  <li><b>Teljesítmény</b> — olyan gyors, mint a C/C++, nincs garbage collector (szemétgyűjtő),
+  hanem a memóriát fordítás időben, úgynevezett <i>ownership</i> (birtoklás) szabályokkal kezeli.</li>
+  <li><b>Biztonság</b> — a fordító (a <i>borrow checker</i>) már fordítás időben kiszűri a
+  memóriaszivárgást, a <i>data race</i>-eket (párhuzamossági hibákat), és a null-mutató hozzáférést.</li>
+</ul>
+<p>Ez azt jelenti, hogy ha a Rust programod lefordul, abban bizonyos osztályú hibák
+<span style="color:var(--green)">biztosan nincsenek</span>. Ezért szeretik biztonságkritikus
+rendszereknél, CLI eszközöknél, és most mi is egy ilyen nyelven írunk egy kis asztali appot.</p>
+
+<div class="callout info">
+  <span class="label">Miért pont ez a projekt?</span>
+  A KeepAwake érinti a Rust legtöbb fontos témáját: <code>enum</code>-ok és mintaillesztés
+  (pattern matching), <code>Result</code>/<code>Option</code> hibakezelés, <code>trait</code>-ek
+  (pl. <code>Drop</code>, <code>Default</code>), modulrendszer, külső függőségek, FFI
+  (külső C könyvtár hívása), lifecycle-kezelés, és még unit tesztek is. Célszerű tananyag.
+</div>
+
+<!-- ════════════════ 2 ════════════════ -->
+<h2 class="section" id="s2"><span class="num">2.</span>Telepítés és a Cargo</h2>
+<p>A Rust-ot a hivatalos <code>rustup</code> telepítővel szokás feltenni macOS-en:</p>
+<div class="terminal"><span class="prompt">$</span> curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</div>
+<p>A telepítő felteszi magát a fordítót (<code>rustc</code>) és a csomagkezelőt és
+build-eszközt (<code>cargo</code>). Ettől kezdve minden a <code>cargo</code>-n keresztül megy:</p>
+<table>
+  <tr><th>Parancs</th><th>Mit csinál</th></tr>
+  <tr><td><code>cargo new projekt</code></td><td>Létrehoz egy új projekt-skeleton-t</td></tr>
+  <tr><td><code>cargo build</code></td><td>Lefordítja a projektet (<code>target/</code> mappába)</td></tr>
+  <tr><td><code>cargo run</code></td><td>Fordít + futtat</td></tr>
+  <tr><td><code>cargo test</code></td><td>Fordít + lefuttatja a teszteket</td></tr>
+  <tr><td><code>cargo add tao</code></td><td>Felvesz egy külső könyvtárat (dependency-t)</td></tr>
+</table>
+<div class="callout tip">
+  <span class="label">Cargo = ember + autó</span>
+  A Cargo sokkal több, mint fordító: kezeli a függőségeket (letölti a crates.io-ról),
+  végez <i>lint</i>-elést, dokumentációt generál, és egységesíti, hogy minden Rust
+  projekt ugyanúgy épüljön. Később látni fogod a <code>Cargo.toml</code>-t.
+</div>
+
+<!-- ════════════════ 3 ════════════════ -->
+<h2 class="section" id="s3"><span class="num">3.</span>Hello, Rust!</h2>
+<p>Mielőtt a KeepAwake-be beleásnánk magunkat, lássuk a legegyszerűbb Rust programot.
+Egy új <code>main.rs</code> fájl tartalma:</p>
+<pre><code><span class="kw">fn</span> <span class="fn">main</span>() {
+    <span class="mac">println!</span>(<span class="str">"Hello, Rust!"</span>);
+}</code></pre>
+<p>Vegyük sorra — ez a 3 sor rengeteget elárul a nyelvről:</p>
+<ul>
+  <li><code>fn main()</code> — a <code>fn</code> kulcsszó függvényt vezet be. A <code>main</code>
+  a belépési pont: a futtatható program innen indul, mint a C-ben.</li>
+  <li><code>println!</code> — a <code>!</code> végén jelzi, hogy ez nem függvény, hanem
+  egy <b>makró</b>. A makrók fordítás előtt kiegészítik a kódot. A <code>println!</code>
+  helyére a fordító kódot generál, ami a szöveget kiírja a standard outputra.</li>
+  <li>A <code>"Hello, Rust!"</code> egy <code>&amp;'static str</code> típusú string literál.</li>
+  <li>A sor végén a <code>;</code> kötelező — a Rust utasításokat zárja.</li>
+</ul>
+<div class="callout info">
+  <span class="label">Miért makró a println?</span>
+  Mert változó számú argumentumot vesz át: <code>println!("{} éve", 10)</code>. A Rust
+  makrók fordítási időben kiegészülnek a megfelelő kóddá. Ez gyorsabb és biztonságosabb,
+  mint a C <code>printf</code> futási idejű formátum-ellenőrzése.
+</div>
+
+<!-- ════════════════ 4 ════════════════ -->
+<h2 class="section" id="s4"><span class="num">4.</span>A KeepAwake project bemutatása</h2>
+<p>A KeepAwake egy macOS menüsor (tray) alkalmazás. Célja: egy kattintással megakadályozni,
+hogy a Mac elaludjon — például mikor letöltünk valamit, vagy fut egy hosszú build.
+A menüsorban egy <b>kávéscsésze ikon</b> mutatja a hátralévő időt: tele csésze = sok idő,
+üres csésze = lejárt / inaktív.</p>
+
+<p>Ezt úgy éri el, hogy a macOS <code>IOKit</code> rendszer-API-jával létrehoz egy
+<i>power assertion</i>-t, ami jelzi a rendszernek: "ne engedd a gépet aludni".
+Amikor leállítjuk (vagy kilépünk), ezt az assertion-t <i>release</i>-eljük.</p>
+
+<h3>Az architektúra</h3>
+<div class="arch"><b>main.rs</b>   ─ tao event loop, másodperces tick, UI frissítés
+   │
+   ├── <b>tray.rs</b>      ─ menü felépítés + ID -> parancs
+   ├── <b>app_state.rs</b> ─ alkalmazás állapot modell (Inactive/Indefinite/Timed/Expired)
+   ├── <b>timer.rs</b>     ─ időzített mód állapota (hátralévő/eltelt idő)
+   ├── <b>icons.rs</b>     ─ PNG frame cache + frame kiválasztás hátralévőből
+   └── <b>awake.rs</b>     ─ IOKit FFI + assertion életciklus (start/stop/Drop)</div>
+
+<p>Minden modul egy-egy felelősséget kapott. Ezt a szétválasztást a Rust
+<a href="#s6">modulrendszere</a> teszi lehetővé. Most pedig építsük fel lépésről lépésre!</p>
+
+<!-- ════════════════ 5 ════════════════ -->
+<h2 class="section" id="s5"><span class="num">5.</span>A <code>Cargo.toml</code> — a projekt leírása</h2>
+<p>A Cargo minden projektjének van egy <code>Cargo.toml</code> manifest-fájlja a gyökérben.
+Ez mondja meg, mi a projekt neve, milyen függőségei vannak, stb. A KeepAwake-é:</p>
+
+<div class="file-header"><span class="dot"></span><span class="path">Cargo.toml</span></div>
+<pre><code><span class="com"># A projekt (csomag) metaadatai.</span>
+[package]
+<span class="ty">name</span> = <span class="str">"keepawake"</span>
+<span class="ty">version</span> = <span class="str">"0.1.0"</span>
+<span class="ty">edition</span> = <span class="str">"2021"</span>
+<span class="ty">description</span> = <span class="str">"macOS utility ami IOKit power assertion-nel ébren tartja a gépet..."</span>
+<span class="ty">license</span> = <span class="str">"MIT"</span>
+
+<span class="com"># Ez a csomag egy futtatható binárist állít elő.</span>
+[[bin]]
+<span class="ty">name</span> = <span class="str">"keepawake"</span>
+<span class="ty">path</span> = <span class="str">"src/main.rs"</span>
+
+<span class="com"># Külső könyvtárak (crates.io-ról).</span>
+[dependencies]
+<span class="ty">tao</span> = <span class="str">"0.35"</span>           <span class="com"># platform event loop (ablakok, input)</span>
+<span class="ty">tray-icon</span> = <span class="str">"0.24"</span>      <span class="com"># tray menü ikon</span>
+<span class="ty">image</span> = <span class="str">"0.25"</span>          <span class="com"># PNG betöltés</span>
+<span class="ty">core-foundation</span> = <span class="str">"0.10"</span> <span class="com"># CFString (macOS framework hívásokhoz)</span>
+<span class="ty">libc</span> = <span class="str">"0.2"</span>            <span class="com"># C típusok (c_void stb.)</span>
+<span class="ty">ctrlc</span> = <span class="str">"3"</span>             <span class="com"># Ctrl-C kezelés</span>
+
+<span class="com"># Release bináris optimalizálása a legkisebb méretre.</span>
+[profile.release]
+<span class="ty">opt-level</span> = <span class="str">"z"</span>
+<span class="ty">lto</span> = <span class="kw">true</span>
+<span class="ty">codegen-units</span> = <span class="num">1</span>
+<span class="ty">strip</span> = <span class="kw">true</span></code></pre>
+
+<div class="callout tip">
+  <span class="label">TOML magyarázat</span>
+  A TOML egy konfigurációs formátum, ami szekciókra (<code>[package]</code>,
+  <code>[dependencies]</code>) van osztva. A <code>"0.35"</code> verziószámok a
+  <i>semver</i> (szemantikus verziózás) szerinti tartományt jelentenek: legalább 0.35,
+  de kisebb mint 0.36. A Cargo ezeket automatikusan letölti és lefordítja.
+</div>
+
+<!-- ════════════════ 6 ════════════════ -->
+<h2 class="section" id="s6"><span class="num">6.</span>A Rust modulrendszer</h2>
+<p>A <code>src/main.rs</code> tetején ez az 5 sor szerepel — ez vezeti be a többit:</p>
+
+<div class="file-header"><span class="dot"></span><span class="path">src/main.rs (eleje)</span></div>
+<pre><code><span class="kw">mod</span> app_state;
+<span class="kw">mod</span> awake;
+<span class="kw">mod</span> icons;
+<span class="kw">mod</span> timer;
+<span class="kw">mod</span> tray;</code></pre>
+
+<p>A <code>mod foo;</code> utasítás azt mondja a fordítónak: "van egy <code>foo</code> nevű
+modulom, keresd a <code>src/foo.rs</code> fájlban". A modulokkal egy nagy fájlt több
+kisebbre bonthatunk úgy, hogy minden fájl egy-egy felelősségért feleljen.</p>
+
+<ul>
+  <li><b>Modul</b> = egy névtér név-és-kód számára. A fájlnevek és modulnevek összekapcsolódnak.</li>
+  <li><b>Láthatóság</b>: egy modulban <code>pub fn</code> / <code>pub struct</code> a publikus,
+  a többi privát. Csak a <code>pub</code>-lik látszanak kifelé.</li>
+  <li><b>Útvonal</b>: <code>app_state::AppState</code> jelentése: "az <code>app_state</code>
+  modulban lévő <code>AppState</code> típus". Ez a <code>::</code> útvonal-szeparátor.</li>
+</ul>
+
+<div class="callout warn">
+  <span class="label">Privát alapértelmezés</span>
+  A Rustban <b>minden privát, ha nem mondod a fordítónak az ellenkezőjét</b>. Ez
+  biztonságos alapbeállítás: nem szivároghat ki belső részlet. Ha egy másik modulból
+  el akarod érni, <code>pub</code> kulcsszót kell tenni elé.
+</div>
+
+<p>A fájl tetején lévő nagy <code>//! ...</code> blokk egy <i>belső dokumentációs
+komment</i>: a fordító a modulhoz (fájlhoz) rendeli, nem egy konkrét elemhez.
+Ezekből a <code>cargo doc</code> HTML dokumentációt tud generálni.</p>
+
+<!-- ════════════════ 7 ════════════════ -->
+<h2 class="section" id="s7"><span class="num">7.</span>Lépés 1 — Állapotmodell (<code>app_state.rs</code>)</h2>
+<p>Kezdjük a legegyszerűbb modullal. Ez a fájl tartalmazza a teljes alkalmazás
+állapotát — minden UI frissítés ebből származik. Itt találkozunk először a Rust
+legfontosabb eszközével: az <code>enum</code>-mal.</p>
+
+<div class="file-header"><span class="dot"></span><span class="path">src/app_state.rs</span></div>
+<pre><code><span class="kw">pub enum</span> <span class="ty">AwakeMode</span> {
+    <span class="ty">Inactive</span>,
+    <span class="ty">Indefinite</span>,
+    <span class="ty">Timed</span>(<span class="ty">TimerState</span>),
+    <span class="ty">Expired</span>,
+}</code></pre>
+
+<p>Egy <code>enum</code> egy <i>diszjunkt unió</i>: egy érték pontosan egy variáns lehet
+egyszerre. Ez hasonlít a C tagged union-jára vagy a TypeScript discriminated union-jére,
+de sokkal biztonságosabb. Itt az ébren tartás 4 lehetséges módját soroljuk fel:</p>
+<ul>
+  <li><code>Inactive</code> — semmi sem blokkolva</li>
+  <li><code>Indefinite</code> — manuális, időkorlát nélküli ébren tartás</li>
+  <li><code>Timed(TimerState)</code> — időzített mód, és a variáns <b>adatot is hordoz</b>!</li>
+  <li><code>Expired</code> — a timer lejárt (tranziens nyugalmi állapot)</li>
+</ul>
+
+<div class="callout info">
+  <span class="label">Eltérés a többi nyelvtől</span>
+  Java/C#-ban ehhez osztályhierarchiát (<code>class Indefinite extends AwakeMode</code>)
+  kellene írni. A Rust <code>enum</code> variánsai hordozhatnak tetszőleges adatot,
+  így sokkal tömörebb. A mintaillesztés (lent) kikényszeríti, hogy <b>minden variánst</b>
+  kezelj — nem felejthetsz el egyet sem.
+</div>
+
+<h3>Mintaillesztés (pattern matching)</h3>
+<p>Az <code>enum</code> értékeket a <code>match</code> utasítással vizsgáljuk meg:</p>
+<pre><code><span class="kw">pub fn</span> <span class="fn">is_active</span>(&amp;<span class="self">self</span>) -&gt; <span class="kw">bool</span> {
+    <span class="kw">matches!</span>(<span class="self">self</span>, <span class="ty">AwakeMode</span>::<span class="ty">Indefinite</span> | <span class="ty">AwakeMode</span>::<span class="ty">Timed</span>(<span class="kw">_</span>))
+}</code></pre>
+<p>A <code>matches!</code> makró egy rövidítése a <code>match</code>-nek: <code>true</code>-t
+ad, ha az érték beleillik a mintába. A <code>_</code> jelentése "bármi" — a
+<code>Timed(_)</code> minta illeszkedik bármilyen <code>Timed</code> variánsra, az
+adatot nem vizsgálja. Tehát aktív a session, ha vagy <code>Indefinite</code>, vagy
+<code>Timed</code> bármilyen timer-rel.</p>
+
+<h3>Egy <code>struct</code> és <code>impl</code></h3>
+<pre><code><span class="kw">pub struct</span> <span class="ty">AppState</span> {
+    <span class="kw">pub</span> awake_mode: <span class="ty">AwakeMode</span>,
+    <span class="kw">pub</span> keep_display_awake: <span class="kw">bool</span>,
+    <span class="kw">pub</span> current_icon_frame: <span class="ty">IconFrame</span>,
+}
+
+<span class="kw">impl</span> <span class="ty">AppState</span> {
+    <span class="kw">pub fn</span> <span class="fn">new</span>() -&gt; <span class="ty">Self</span> {
+        <span class="ty">Self</span> {
+            awake_mode: <span class="ty">AwakeMode</span>::<span class="ty">Inactive</span>,
+            keep_display_awake: <span class="kw">false</span>,
+            current_icon_frame: <span class="ty">IconFrame</span>::<span class="ty">Empty</span>,
+        }
+    }
+    <span class="com">// ...további metódusok</span>
+}</code></pre>
+<ul>
+  <li><code>struct</code> = adatmezők halmaza (mint a C struct, de metódusokkal bővíthető).</li>
+  <li><code>impl AppState { ... }</code> = az <code>AppState</code> típushoz tartozó
+  metódusok blokkja. Ide kerülnek a függvények.</li>
+  <li><code>Self</code> = a típus saját nevének rövidítése az <code>impl</code> blokkon belül.</li>
+  <li><code>&amp;self</code> a metódus első paramétere = <i>mint a C++ <code>this</code></i>,
+  csak a Rustban explicit kell írni, és a <code>&amp;</code> jelzi, hogy kölcsönözve (borrow),
+  nem birtokolva vesszük át.</li>
+</ul>
+
+<h3>A <code>match</code> ami adatot von ki</h2>
+<pre><code><span class="kw">pub fn</span> <span class="fn">tooltip</span>(&amp;<span class="self">self</span>) -&gt; <span class="ty">String</span> {
+    <span class="kw">match</span> &amp;<span class="self">self</span>.awake_mode {
+        <span class="ty">AwakeMode</span>::<span class="ty">Inactive</span> =&gt; <span class="str">"KeepAwake: inaktív"</span>.<span class="fn">to_string</span>(),
+        <span class="ty">AwakeMode</span>::<span class="ty">Indefinite</span> =&gt; <span class="str">"KeepAwake: aktív"</span>.<span class="fn">to_string</span>(),
+        <span class="ty">AwakeMode</span>::<span class="ty">Timed</span>(t) =&gt; {
+            <span class="kw">let</span> r = t.<span class="fn">remaining</span>();
+            <span class="kw">let</span> m = r.<span class="fn">as_secs</span>() / <span class="num">60</span>;
+            <span class="kw">let</span> s = r.<span class="fn">as_secs</span>() % <span class="num">60</span>;
+            <span class="mac">format!</span>(<span class="str">"KeepAwake: {:02}:{:02} van hátra"</span>, m, s)
+        }
+        <span class="ty">AwakeMode</span>::<span class="ty">Expired</span> =&gt; <span class="str">"KeepAwake: lejárt"</span>.<span class="fn">to_string</span>(),
+    }
+}</code></pre>
+<p>Itt látható a <code>match</code> igazi ereje: a <code>Timed(t)</code> minta nemcsak
+ellenőriz, hanem <b>köt is</b> — a <code>t</code> név a variánsban lévő
+<code>TimerState</code>-re hivatkozik, amit utána használhatunk. A <code>match</code>
+<b>kikötelező</b>: ha lehagysz egy variánst, a fordító hibát ad (így nem felejtessz el
+esetet). A <code>format!</code> makró a C <code>printf</code>-hez hasonlóan formáz,
+de típusbiztos és fordítási időben ellenőrzött.</p>
+
+<div class="callout tip">
+  <span class="label">A <code>Default</code> trait</span>
+  A fájl végén: <code>impl Default for AppState { fn default() -&gt; Self { Self::new() } }</code>.
+  A <code>Default</code> egy beépített <i>trait</i> (interfész), ami egy alapértelmezett
+  értéket szolgáltat. Sok generikus API elvárja, így illik megadni.
+</div>
+
+<!-- ════════════════ 8 ════════════════ -->
+<h2 class="section" id="s8"><span class="num">8.</span>Lépés 2 — Időzítő (<code>timer.rs</code>)</h2>
+<p>A <code>timer.rs</code> egy önálló modul, ami egy elindított időzítés adatait tárolja.
+Ez egy szép kis példa a Rust szabványos könyvtárára (<code>std</code>).</p>
+
+<div class="file-header"><span class="dot"></span><span class="path">src/timer.rs</span></div>
+<pre><code><span class="kw">use</span> std::time::{<span class="ty">Duration</span>, <span class="ty">Instant</span>};
+
+<span class="kw">pub struct</span> <span class="ty">TimerState</span> {
+    started_at: <span class="ty">Instant</span>,
+    total: <span class="ty">Duration</span>,
+}
+
+<span class="kw">impl</span> <span class="ty">TimerState</span> {
+    <span class="kw">pub fn</span> <span class="fn">new</span>(total: <span class="ty">Duration</span>) -&gt; <span class="ty">Self</span> {
+        <span class="ty">Self</span> {
+            started_at: <span class="ty">Instant</span>::<span class="fn">now</span>(),
+            total,
+        }
+    }
+
+    <span class="kw">pub fn</span> <span class="fn">elapsed</span>(&amp;<span class="self">self</span>) -&gt; <span class="ty">Duration</span> {
+        <span class="ty">Instant</span>::<span class="fn">now</span>().<span class="fn">duration_since</span>(<span class="self">self</span>.started_at)
+    }
+
+    <span class="kw">pub fn</span> <span class="fn">remaining</span>(&amp;<span class="self">self</span>) -&gt; <span class="ty">Duration</span> {
+        <span class="self">self</span>.total.<span class="fn">saturating_sub</span>(<span class="self">self</span>.<span class="fn">elapsed</span>())
+    }
+
+    <span class="kw">pub fn</span> <span class="fn">is_finished</span>(&amp;<span class="self">self</span>) -&gt; <span class="kw">bool</span> {
+        <span class="self">self</span>.<span class="fn">elapsed</span>() &gt;= <span class="self">self</span>.total
+    }
+}</code></pre>
+
+<ul>
+  <li><code>use std::time::{Duration, Instant};</code> — a <code>std</code> a szabványos
+  könyvtár, a <code>use</code> behozza a neveket, hogy ne kelljen <code>std::time::Duration</code>-ként hivatkozni.</li>
+  <li><code>Instant::now()</code> — egy <b>monoton óra</b> pillanatnyi időpontja. Ez a
+  teljesítményméréshez jó (nem a faliórához!).</li>
+  <li><code>Duration</code> — egy időtartam (másodperc + nanoszekundum).</li>
+  <li><code>saturating_sub</code> — kivonás, ami <b>0-nál megáll</b>, nem underflow-ol.
+  Ez fontos Rust-trükk: a numerikus típusoknál alapból nincs overflow, de explicit kell
+  mondani, mit szeretnénk tenni (<code>saturating_*</code>, <code>wrapping_*</code>, <code>checked_*</code>).</li>
+</ul>
+
+<h3>Egységtesztek</h3>
+<p>A fájl alján belső tesztmodul van — a Rust a teszteket a kóddal együtt, ugyanabban
+a fájlban tartja:</p>
+<pre><code><span class="mac">#[cfg(test)]</span>
+<span class="kw">mod</span> tests {
+    <span class="kw">use super::*</span>;
+
+    <span class="mac">#[test]</span>
+    <span class="kw">fn</span> <span class="fn">remaining_saturates_at_zero</span>() {
+        <span class="kw">let</span> t = <span class="ty">TimerState</span>::<span class="fn">new</span>(<span class="ty">Duration</span>::<span class="fn">from_millis</span>(<span class="num">10</span>));
+        std::thread::<span class="fn">sleep</span>(<span class="ty">Duration</span>::<span class="fn">from_millis</span>(<span class="num">30</span>));
+        <span class="kw">assert!</span>(t.<span class="fn">is_finished</span>());
+        <span class="kw">assert_eq!</span>(t.<span class="fn">remaining</span>(), <span class="ty">Duration</span>::<span class="ty">ZERO</span>);
+    }
+}</code></pre>
+<ul>
+  <li><code>#[cfg(test)]</code> — attribútum, ami azt mondja: "ez a modul csak teszt
+  buildben (<code>cargo test</code>) legyen lefordítva, a release binárisból kimarad".</li>
+  <li><code>use super::*;</code> — "hozd be mindazt, amit a szülőmodulban publikálnak"
+  (a <code>super</code> = szülőmodul).</li>
+  <li><code>#[test]</code> — jelzi, hogy ez egy tesztfüggvény. A <code>cargo test</code>
+  automatikusan megtalálja és lefuttatja.</li>
+  <li><code>assert!</code> és <code>assert_eq!</code> — assertion-makrók; ha nem teljesül,
+  a teszt elbukik részletes hibaüzenettel.</li>
+</ul>
+<div class="terminal"><span class="prompt">$</span> cargo test --lib timer
+<span class="out">running 2 tests
+test timer::tests::remaining_saturates_at_zero ... ok
+test timer::tests::progress_clamps_to_one ... ok
+test result: ok. 2 passed; 0 failed</span></div>
+
+<!-- ════════════════ 9 ════════════════ -->
+<h2 class="section" id="s9"><span class="num">9.</span>Lépés 3 — Ikonok (<code>icons.rs</code>)</h2>
+<p>Ez a modul kezeli a kávéscsésze 5 PNG "frame"-ét, és eldönti, az idő múlásával
+éppen melyiket mutassa. Itt látni fogunk <code>HashMap</code>-et és <code>enum</code>
+másik arcát (repr-eket).</p>
+
+<div class="file-header"><span class="dot"></span><span class="path">src/icons.rs</span></div>
+<pre><code><span class="com">/* Az enum reprezentációja: egyszerű 0..=4 egész szám.</span>
+<span class="com">   Így könnyű belőle fájlnév-indexet csinálni. */</span>
+<span class="mac">#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]</span>
+<span class="kw">pub enum</span> <span class="ty">IconFrame</span> {
+    <span class="ty">Empty</span>,   <span class="com">// cup_0.png</span>
+    <span class="ty">Low</span>,     <span class="com">// cup_1.png</span>
+    <span class="ty">Mid</span>,     <span class="com">// cup_2.png</span>
+    <span class="ty">High</span>,    <span class="com">// cup_3.png</span>
+    <span class="ty">Full</span>,    <span class="com">// cup_4.png</span>
+}</code></pre>
+
+<p>Az <code>#[derive(...)]</code> attribútum a fordítót kéri meg, hogy automatikusan
+implementáljon bizonyos trait-eket. Itt:</p>
+<ul>
+  <li><code>Debug</code> — <code>{:?}</code> formátumú kiíráshoz (debugolás)</li>
+  <li><code>Clone, Copy</code> — érték-szerinti másolás (mert a változó csak 1 byte!)</li>
+  <li><code>PartialEq, Eq</code> — <code>==</code> és <code>!=</code> összehasonlítás</li>
+  <li><code>Hash</code> — kulcs lehet egy <code>HashMap</code>-ben</li>
+</ul>
+
+<h3>Egy függvény: arány → frame</h3>
+<pre><code><span class="kw">pub fn</span> <span class="fn">frame_for_remaining</span>(remaining: <span class="ty">Duration</span>, total: <span class="ty">Duration</span>) -&gt; <span class="ty">IconFrame</span> {
+    <span class="kw">if</span> total.<span class="fn">is_zero</span>() {
+        <span class="kw">return</span> <span class="ty">IconFrame</span>::<span class="ty">Full</span>;
+    }
+    <span class="kw">let</span> ratio = remaining.<span class="fn">as_secs_f64</span>() / total.<span class="fn">as_secs_f64</span>();
+    <span class="kw">if</span> ratio &gt; <span class="num">0.80</span> { <span class="ty">IconFrame</span>::<span class="ty">Full</span> }
+    <span class="kw">else if</span> ratio &gt; <span class="num">0.60</span> { <span class="ty">IconFrame</span>::<span class="ty">High</span> }
+    <span class="kw">else if</span> ratio &gt; <span class="num">0.40</span> { <span class="ty">IconFrame</span>::<span class="ty">Mid</span> }
+    <span class="kw">else if</span> ratio &gt; <span class="num">0.20</span> { <span class="ty">IconFrame</span>::<span class="ty">Low</span> }
+    <span class="kw">else</span> { <span class="ty">IconFrame</span>::<span class="ty">Empty</span> }
+}</code></pre>
+<p>Ez tipikus Rust-vezérlési szerkezet: a <code>let ratio = ...</code> egy változó
+bekötése (az érték a sor végén, típus bal oldalt elhagyható, mert a fordító kitalálja).
+Az <code>if/else if/else</code> lánc — utolsó ágnak kötelező <code>else</code>, hogy
+minden eset le legyen fedve (a kifejezéseknek értéke van!). A <code>return</code> a
+függvényből ugrik ki; e nélkül az utolsó kifejezés a visszatérési érték (nincs <code>;</code> a végén!).</p>
+
+<h3>Konstans fordítási idejű útvonal</h3>
+<pre><code><span class="kw">pub fn</span> <span class="fn">path_for_frame</span>(frame: <span class="ty">IconFrame</span>) -&gt; <span class="ty">String</span> {
+    <span class="mac">format!</span>(<span class="str">"{}/assets/cup_{}@2x.png"</span>, <span class="mac">env!</span>(<span class="str">"CARGO_MANIFEST_DIR"</span>), frame.<span class="fn">index</span>())
+}</code></pre>
+<p>Az <code>env!("CARGO_MANIFEST_DIR")</code> egy <b>fordítási idejű makró</b>: a Cargo
+beállít egy környezeti változót a projekt gyökerével, és a <code>env!</code> ezt beégeti
+a binárisba. Így a futtatható állomány független attól, honnan indítod — mindig megtalálja
+az <code>assets/</code> mappát a build helyétől. Ez nagyon hasznos trükk!</p>
+
+<h3>A cache: <code>HashMap</code></h3>
+<pre><code><span class="kw">use</span> std::collections::<span class="ty">HashMap</span>;
+
+<span class="kw">pub struct</span> <span class="ty">IconCache</span> {
+    icons: <span class="ty">HashMap</span>&lt;<span class="ty">IconFrame</span>, <span class="ty">Icon</span>&gt;,
+}
+
+<span class="kw">impl</span> <span class="ty">IconCache</span> {
+    <span class="kw">pub fn</span> <span class="fn">new</span>() -&gt; <span class="ty">Self</span> {
+        <span class="kw">let mut</span> icons = <span class="ty">HashMap</span>::<span class="fn">with_capacity</span>(<span class="num">5</span>);
+        <span class="kw">for</span> frame <span class="kw">in</span> <span class="ty">IconFrame</span>::<span class="fn">all</span>() {
+            <span class="kw">let</span> path = <span class="fn">path_for_frame</span>(frame);
+            <span class="kw">let</span> icon = <span class="fn">load_icon</span>(&amp;path);
+            icons.<span class="fn">insert</span>(frame, icon);
+        }
+        <span class="ty">Self</span> { icons }
+    }
+}</code></pre>
+<ul>
+  <li><code>HashMap&lt;K, V&gt;</code> — asszociatív tömb. Generikus típus, a
+  <code>&lt;IconFrame, Icon&gt;</code> behelyettesíti a kulcs/érték típusokat.</li>
+  <li><code>let mut</code> — a változó <i>mutable</i> (változtatható). A Rustban
+  alapból minden <b>immutable</b>, <code>mut</code> kell a módosításhoz.</li>
+  <li><code>for x in iter</code> — a ciklus. A <code>IconFrame::all()</code> egy
+  <code>[IconFrame; 5]</code> tömböt ad vissza, ami iterálhatóvá válik.</li>
+  <li><code>&amp;path</code> — kölcsönzés: átadjuk a függvénynek, de nem adjuk oda a
+  birtoklást, így <code>path</code> utána is használható.</li>
+</ul>
+
+<div class="callout warn">
+  <span class="label">Egy minta a fájlban: pánika hibára</span>
+  A <code>load_icon</code> <code>.unwrap_or_else(|e| panic!(...))</code> használ. Ez
+  azt jelenti: ha a PNG betöltése sikertelen, a program <b>panikál</b> (leáll). Ez itt
+  szándékos: hiányzó ikon = kritikus hiba, értelmetlen lenne továbbmenni. Általában
+  azonban a <code>Result</code>-t továbbadjuk (lást következő lépés!).
+</div>
+
+<!-- ════════════════ 10 ════════════════ -->
+<h2 class="section" id="s10"><span class="num">10.</span>Lépés 4 — FFI az IOKit-hez (<code>awake.rs</code>)</h2>
+<p>Ez a legizgalmasabb modul. Itt hívunk <b>natív C függvényeket</b> a macOS
+<code>IOKit</code> framework-jéből. Ezt hívják FFI-nek (Foreign Function Interface).</p>
+
+<h3>C függvények deklarálása</h3>
+<pre><code><span class="kw">type</span> <span class="ty">IOPMAssertionID</span> = <span class="kw">u32</span>;
+<span class="kw">type</span> <span class="ty">IOReturn</span> = <span class="kw">i32</span>;
+
+<span class="mac">#[link(name = "IOKit", kind = "framework")]</span>
+<span class="kw">extern "C"</span> {
+    <span class="kw">fn</span> <span class="fn">IOPMAssertionCreateWithName</span>(
+        assertion_type: *<span class="kw">const</span> <span class="ty">c_void</span>,
+        assertion_level: <span class="kw">u32</span>,
+        assertion_name: *<span class="kw">const</span> <span class="ty">c_void</span>,
+        assertion_id: *<span class="kw">mut</span> <span class="ty">IOPMAssertionID</span>,
+    ) -&gt; <span class="ty">IOReturn</span>;
+
+    <span class="kw">fn</span> <span class="fn">IOPMAssertionRelease</span>(assertion_id: <span class="ty">IOPMAssertionID</span>) -&gt; <span class="ty">IOReturn</span>;
+}</code></pre>
+<ul>
+  <li><code>type T = U;</code> — típus-álnév. Olvashatóbbá teszi a kódot (ahol
+  <code>u32</code> van, az valójában egy "IOKit ID").</li>
+  <li><code>#[link(name = "IOKit", ...)]</code> — megmondja a linkernek, hogy a
+  <code>IOKit</code> macOS framework-öt hozzá kell linkelni.</li>
+  <li><code>extern "C"</code> — egy blokk, ami C-linkage-ű (C hívási konvenciójú)
+  függvényeket deklarál. A <b>törzs</b> nincs megírva — a C könyvtárból jön.</li>
+  <li><code>*const c_void</code> — nyers <i>mutató</i> (pointer), ami csak olvasható.
+  A <code>*mut</code> írható mutató. A <code>c_void</code> a C <code>void</code>-ja.</li>
+</ul>
+
+<div class="callout warn">
+  <span class="label"> unsafe világ</span>
+  A C függvényeket hívó kódot <code>unsafe { ... }</code> blokkba kell tenni.
+  A Rust biztonsági garanciái csak a saját kódjára vonatkoznak — a C kódot nem
+  tudja ellenőrizni, így a programozó felelőssége, hogy a hívás biztonságos legyen.
+  Ez a Rust kompromisszuma: nem tilthatod a nem-biztonságos műveleteket (mint C# unsafe),
+  de explicit jelezni kell őket — így a "hol lehet hiba" kör szűkül.
+</div>
+
+<h3>Az <code>unsafe</code> blokk</h3>
+<pre><code><span class="kw">fn</span> <span class="fn">create_assertion</span>(type_str: &amp;<span class="ty">str</span>) -&gt; <span class="ty">Result</span>&lt;<span class="ty">IOPMAssertionID</span>, <span class="ty">IOReturn</span>&gt; {
+    <span class="kw">let</span> cf_type = <span class="ty">CFString</span>::<span class="fn">new</span>(type_str);
+    <span class="kw">let</span> cf_name = <span class="ty">CFString</span>::<span class="fn">new</span>(<span class="ty">ASSERTION_NAME</span>);
+    <span class="kw">let mut</span> id: <span class="ty">IOPMAssertionID</span> = <span class="num">0</span>;
+
+    <span class="kw">let</span> result = <span class="kw">unsafe</span> {
+        <span class="fn">IOPMAssertionCreateWithName</span>(
+            cf_type.<span class="fn">as_concrete_TypeRef</span>() <span class="kw">as</span> *<span class="kw">const</span> <span class="ty">c_void</span>,
+            <span class="ty">ASSERTION_LEVEL_ON</span>,
+            cf_name.<span class="fn">as_concrete_TypeRef</span>() <span class="kw">as</span> *<span class="kw">const</span> <span class="ty">c_void</span>,
+            &amp;<span class="kw">mut</span> id,
+        )
+    };
+
+    <span class="kw">if</span> result == <span class="ty">IORETURN_SUCCESS</span> { <span class="ty">Ok</span>(id) } <span class="kw">else</span> { <span class="ty">Err</span>(result) }
+}</code></pre>
+
+<h3>A <code>Result</code> típus</h3>
+<p>A <code>Result&lt;T, E&gt;</code> a Rust hibakezelésének alapja. Ez egy enum
+két variánssal:</p>
+<pre><code><span class="kw">enum</span> <span class="ty">Result</span>&lt;T, E&gt; {
+    <span class="ty">Ok</span>(T),   <span class="com">// siker, benne az eredmény</span>
+    <span class="ty">Err</span>(E),  <span class="com">// hiba, benne a hibaadat</span>
+}</code></pre>
+<p>A függvényünk itt <code>Ok(id)</code>-t ad sikeres IOKit hívás esetén (az új
+assertion ID-jával), vagy <code>Err(ior)</code>-t, ha az IOKit hibakódot adott vissza.
+A <code>Result</code> <b>kényszeríti a hívót</b>, hogy kezelje a hibát — nem
+felejtheti el. Ez a Rust filozófiája: a hiba egy érték, nem egy kivétel.</p>
+
+<h3><code>Option</code> — a "van vagy nincs" típus</h3>
+<pre><code><span class="kw">pub struct</span> <span class="ty">AwakeController</span> {
+    system_assertion_id: <span class="ty">Option</span>&lt;<span class="ty">IOPMAssertionID</span>&gt;,
+    display_assertion_id: <span class="ty">Option</span>&lt;<span class="ty">IOPMAssertionID</span>&gt;,
+}</code></pre>
+<p>Az <code>Option&lt;T&gt;</code> egy enum, <code>Some(T)</code> (van érték) vagy
+<code>None</code> (nincs). A Rust-ban <b>nincs null</b>: ha egy érték "lehet hiányzó",
+az <code>Option</code>. Így a <code>None</code> sosem keveredhetik értékkel, és a
+fordító rávesz, hogy ellenőrizd a <code>Some</code>-ot, mielőtt kiveszed belőle a
+tartalmat. Itt <code>None</code> = "nincs aktív assertion", <code>Some(id)</code> =
+"van, ez az ID".</p>
+
+<h3>Az idempotens <code>start</code> és a hibakezelés lánc</h3>
+<pre><code><span class="kw">pub fn</span> <span class="fn">start</span>(&amp;<span class="kw">mut</span> <span class="self">self</span>, keep_display_awake: <span class="kw">bool</span>) -&gt; <span class="ty">Result</span>&lt;(), <span class="ty">AwakeError</span>&gt; {
+    <span class="self">self</span>.<span class="fn">stop</span>();  <span class="com">// előbb felszabadítjuk az esetleg meglévőt</span>
+
+    <span class="kw">let</span> sys_id = <span class="fn">create_assertion</span>(<span class="ty">SYSTEM_TYPE</span>).<span class="fn">map_err</span>(<span class="ty">AwakeError</span>::<span class="ty">CreateSystem</span>)?;
+    <span class="self">self</span>.system_assertion_id = <span class="ty">Some</span>(sys_id);
+
+    <span class="kw">if</span> keep_display_awake {
+        <span class="kw">match</span> <span class="fn">create_assertion</span>(<span class="ty">DISPLAY_TYPE</span>) {
+            <span class="ty">Ok</span>(disp_id) =&gt; <span class="self">self</span>.display_assertion_id = <span class="ty">Some</span>(disp_id),
+            <span class="ty">Err</span>(code) =&gt; {
+                <span class="self">self</span>.<span class="fn">stop</span>();  <span class="com">// rollback</span>
+                <span class="kw">return</span> <span class="ty">Err</span>(<span class="ty">AwakeError</span>::<span class="ty">CreateDisplay</span>(code));
+            }
+        }
+    }
+    <span class="ty">Ok</span>(())
+}</code></pre>
+<ul>
+  <li><code>&amp;mut self</code> — mutable kölcsönzés: ez a metódus <b>módosítja</b>
+  a struct mezőit, ezért kell a <code>mut</code>.</li>
+  <li><code>.map_err(...)?</code> — a <code>?</code> operátor! Ha <code>Err</code>,
+  <b>kilép a függvényből</b> és továbbadja a hibát (felfelé terjed). Ha <code>Ok</code>,
+  kicsomagolja a belső értéket. A <code>.map_err</code> előtte átalakítja a hibátípust.</li>
+  <li><code>Ok(())</code> — az üres eredmény ("sikeresen végeztem, semmit nem adok
+  vissza"). Az <code>()</code> az <i>unit</i> típus, egyetlen értékkel, mint a C
+  <code>void</code>.</li>
+  <li>A <code>match</code> + rollback-minta <b>tranzakciós</b> viselkedést ad: ha a
+  display assertion létrehozása elbukik, a system assertion-t is visszagörgetjük.</li>
+</ul>
+
+<h3>A <code>Drop</code> trait — a Rust destruktorja</h3>
+<pre><code><span class="kw">impl</span> <span class="ty">Drop</span> <span class="kw">for</span> <span class="ty">AwakeController</span> {
+    <span class="kw">fn</span> <span class="fn">drop</span>(&amp;<span class="kw">mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="fn">stop</span>();
+    }
+}</code></pre>
+<p>Ez a Rust egyik legszebb mechanizmusa. A <code>Drop</code> trait implementálásával
+megmondjuk: "amikor egy <code>AwakeController</code> érték <b>kimegy a hatókörből</b>
+(eltűnik a stack-ről vagy memóriából), automatikusan hívd meg a <code>drop</code>
+metódust". Ez garantálja, hogy az IOKit assertion-t <b>mindig</b> felszabadítjuk —
+akár normális kilépés, akár pánika, akár korai <code>return</code>. Ez a Rust
+<i>RAII</i> (Resource Acquisition Is Initialization) modellje, mint a C++ destruktora,
+de biztonságosabban és kikényszerítve.</p>
+
+<div class="callout tip">
+  <span class="label">Miért fontos ez?</span>
+  Ha elfelejtenénk <code>stop</code>-ot hívni kilépéskor, a gép "beragadna" ébren tartott
+  módba, és a <code>pmset -g assertions</code> megmutatná a szivárgást. A <code>Drop</code>
+  <b>megakadályozza</b> ezt: ha a processz kilép, az <code>AwakeController</code>
+  megsemmisül, és a <code>Drop::drop</code> felszabadítja az assertion-t. Garancia
+  nyelvi szinten!
+</div>
+
+<!-- ════════════════ 11 ════════════════ -->
+<h2 class="section" id="s11"><span class="num">11.</span>Lépés 5 — A tray menü (<code>tray.rs</code>)</h2>
+<p>Ez a modul csak a UI-t ismeri: felépíti a menüt, és a menüpont ID-jét
+parancsra fordítja. Az IOKit logika nem él itt — ez a tiszta szétválasztás.</p>
+
+<div class="file-header"><span class="dot"></span><span class="path">src/tray.rs</span></div>
+<pre><code><span class="kw">pub enum</span> <span class="ty">TrayCommand</span> {
+    <span class="ty">StartIndefinite</span>,
+    <span class="ty">StartTimed</span>(<span class="ty">Duration</span>),
+    <span class="ty">Stop</span>,
+    <span class="ty">ToggleDisplayAwake</span>,
+    <span class="ty">Quit</span>,
+}
+
+<span class="kw">pub fn</span> <span class="fn">command_for_id</span>(id: &amp;<span class="ty">MenuId</span>) -&gt; <span class="ty">Option</span>&lt;<span class="ty">TrayCommand</span>&gt; {
+    <span class="kw">let</span> s = id.<span class="num">0</span>.<span class="fn">as_str</span>();
+    <span class="kw">match</span> s {
+        <span class="str">"indefinite"</span> =&gt; <span class="ty">Some</span>(<span class="ty">TrayCommand</span>::<span class="ty">StartIndefinite</span>),
+        <span class="str">"t15"</span> =&gt; <span class="ty">Some</span>(<span class="ty">TrayCommand</span>::<span class="ty">StartTimed</span>(<span class="ty">Duration</span>::<span class="fn">from_secs</span>(<span class="num">15</span> * <span class="num">60</span>))),
+        <span class="str">"t30"</span> =&gt; <span class="ty">Some</span>(<span class="ty">TrayCommand</span>::<span class="ty">StartTimed</span>(<span class="ty">Duration</span>::<span class="fn">from_secs</span>(<span class="num">30</span> * <span class="num">60</span>))),
+        <span class="str">"t60"</span> =&gt; <span class="ty">Some</span>(<span class="ty">TrayCommand</span>::<span class="ty">StartTimed</span>(<span class="ty">Duration</span>::<span class="fn">from_secs</span>(<span class="num">60</span> * <span class="num">60</span>))),
+        <span class="str">"t120"</span> =&gt; <span class="ty">Some</span>(<span class="ty">TrayCommand</span>::<span class="ty">StartTimed</span>(<span class="ty">Duration</span>::<span class="fn">from_secs</span>(<span class="num">2</span> * <span class="num">60</span> * <span class="num">60</span>))),
+        <span class="str">"stop"</span> =&gt; <span class="ty">Some</span>(<span class="ty">TrayCommand</span>::<span class="ty">Stop</span>),
+        <span class="str">"display"</span> =&gt; <span class="ty">Some</span>(<span class="ty">TrayCommand</span>::<span class="ty">ToggleDisplayAwake</span>),
+        <span class="str">"quit"</span> =&gt; <span class="ty">Some</span>(<span class="ty">TrayCommand</span>::<span class="ty">Quit</span>),
+        <span class="kw">_</span> =&gt; <span class="ty">None</span>,  <span class="com">// minden más (separator, status) nem parancs</span>
+    }
+}</code></pre>
+<p>A <code>match</code> itt sztring-literálokra illeszkedik. A <code>_</code> a
+végén egy <b>catch-all</b>: bármilyen más string ide kerül. Ez kötelező a
+<code>match</code>-ben (kivéve ha már minden variáns le van fedve). A
+<code>id.0</code> a tuple-struktúra első mezőjét éri el (a <code>MenuId(pub String)</code>
+struktúra egyetlen, névtelen mezője).</p>
+
+<h3>Menü felépítése</h3>
+<pre><code><span class="kw">let</span> status = <span class="ty">MenuItem</span>::<span class="fn">with_id</span>(<span class="str">"status"</span>, <span class="str">"KeepAwake: inaktív"</span>, <span class="kw">false</span>, <span class="ty">None</span>);
+<span class="kw">let</span> indefinite = <span class="ty">MenuItem</span>::<span class="fn">with_id</span>(<span class="str">"indefinite"</span>, <span class="str">"Ébren tartás bekapcsolása"</span>, <span class="kw">true</span>, <span class="ty">None</span>);
+<span class="kw">let</span> display = <span class="ty">CheckMenuItem</span>::<span class="fn">with_id</span>(<span class="str">"display"</span>, <span class="str">"Kijelzőt is ébren tartsa"</span>, <span class="kw">true</span>, <span class="kw">false</span>, <span class="ty">None</span>);
+
+<span class="kw">let</span> menu = <span class="ty">Menu</span>::<span class="fn">new</span>();
+menu.<span class="fn">append_items</span>(&amp;[
+    &amp;status,
+    &amp;<span class="ty">PredefinedMenuItem</span>::<span class="fn">separator</span>(),
+    &amp;indefinite,
+    <span class="com">// ...t15, t30, t60, t120, stop</span>
+    &amp;<span class="ty">PredefinedMenuItem</span>::<span class="fn">separator</span>(),
+    &amp;display,
+    &amp;<span class="ty">PredefinedMenuItem</span>::<span class="fn">separator</span>(),
+    &amp;quit,
+]).<span class="fn">expect</span>(<span class="str">"menü felépítés sikertelen"</span>);</code></pre>
+<p>Az <code>append_items</code> egy <b>tömb referenciát</b> (<code>&amp;[&amp;MenuItem; N]</code>)
+vár — minden egyes elem egy referencia (&amp;), mert a <code>tray-icon</code> könyvtár a
+menüpontokra weak ref-ként hivatkozik (ezért kell a <code>MenuHandles</code> struct-ban
+élve tartani őket). A <code>.expect(msg)</code> az <code>Option</code>/<code>Result</code>
+unwrap-elése hibaüzenettel — ha <code>None</code>/<code>Err</code>, pánikál ezzel a szöveggel.</p>
+
+<!-- ════════════════ 12 ════════════════ -->
+<h2 class="section" id="s12"><span class="num">12.</span>Lépés 6 — Az event loop (<code>main.rs</code>)</h2>
+<p>A <code>main.rs</code> köti össze mindent. Itt fut a <code>tao</code> event loop-ja,
+ami másodpercenként felébredve frissíti az ikont és a menü állapotát. Ez a fájl mutatja
+meg, hogyan "él együtt" az összes eddigi modul.</p>
+
+<h3>A belépési pont és az események</h3>
+<pre><code><span class="kw">enum</span> <span class="ty">UserEvent</span> {
+    <span class="ty">TrayIconEvent</span>(tray_icon::<span class="ty">TrayIconEvent</span>),
+    <span class="ty">MenuEvent</span>(tray_icon::menu::<span class="ty">MenuEvent</span>),
+}
+
+<span class="kw">fn</span> <span class="fn">main</span>() {
+    <span class="kw">let</span> event_loop = <span class="ty">EventLoopBuilder</span>::&lt;<span class="ty">UserEvent</span>&gt;::<span class="fn">with_user_event</span>().<span class="fn">build</span>();
+
+    <span class="com">// ... az eseményeket a loopba tereljük egy EventLoopProxy-n át</span>
+    <span class="kw">let</span> proxy = event_loop.<span class="fn">create_proxy</span>();
+    tray_icon::menu::<span class="ty">MenuEvent</span>::<span class="fn">set_event_handler</span>(<span class="ty">Some</span>(<span class="kw">move</span> |event| {
+        <span class="kw">let</span> _ = proxy.<span class="fn">send_event</span>(<span class="ty">UserEvent</span>::<span class="ty">MenuEvent</span>(event));
+    }));
+
+    event_loop.<span class="fn">run</span>(<span class="kw">move</span> |event, _window_target, control_flow| {
+        <span class="com">// ... minden eseményt itt dolgozunk fel</span>
+    });
+}</code></pre>
+<ul>
+  <li><code>EventLoopBuilder&lt;UserEvent&gt;</code> — generikus típusparaméterezés:
+  az event loop-unk a saját <code>UserEvent</code> enumunkat fogadja a natív
+  események mellett.</li>
+  <li><code>move |event| { ... }</code> — egy <b>closure</b> (névtelen függvény, lambda).
+  A <code>move</code> kulcsszó jelzi, hogy a closure <b>birtokba veszi</b> a külső
+  változókat (itt <code>proxy</code>-t), nem csak kölcsönzi. Ez az ownership modell
+  egy fontos momentuma!</li>
+  <li><code>let _ = proxy.send_event(...)</code> — a <code>let _</code> a visszatérési
+  érték elvetése. Csendesen ignorálja az <code>Err</code>-t (ha a loop már leállt).</li>
+</ul>
+
+<h3>A loop magja: <code>match</code> az eseményeken</h3>
+<pre><code>event_loop.<span class="fn">run</span>(<span class="kw">move</span> |event, _window_target, control_flow| {
+    <span class="com"># Minden iterációban beállítjuk, mikor ébredjünk legközelebb:</span>
+    *control_flow = <span class="ty">ControlFlow</span>::<span class="fn">WaitUntil</span>(<span class="ty">Instant</span>::<span class="fn">now</span>() + <span class="ty">TICK_INTERVAL</span>);
+
+    <span class="kw">match</span> event {
+        <span class="ty">Event</span>::<span class="ty">NewEvents</span>(<span class="ty">StartCause</span>::<span class="ty">Init</span>) =&gt; {
+            <span class="com"># Induláskor létrehozzuk a tray ikont</span>
+            tray_icon = <span class="ty">Some</span>(<span class="ty">TrayIconBuilder</span>::<span class="fn">new</span>()...<span class="fn">build</span>()?);
+        }
+        <span class="ty">Event</span>::<span class="ty">UserEvent</span>(<span class="ty">UserEvent</span>::<span class="ty">MenuEvent</span>(ev)) =&gt; {
+            <span class="kw">let</span> cmd = <span class="fn">command_for_id</span>(&amp;ev.id);
+            <span class="kw">match</span> cmd {
+                <span class="ty">Some</span>(<span class="ty">TrayCommand</span>::<span class="ty">StartIndefinite</span>) =&gt; {
+                    awake.<span class="fn">start</span>(app_state.keep_display_awake)?;
+                    app_state.awake_mode = <span class="ty">AwakeMode</span>::<span class="ty">Indefinite</span>;
+                }
+                <span class="com">// ...többi parancs</span>
+                <span class="ty">None</span> =&gt; {} <span class="com"># separator / ismeretlen</span>
+            }
+        }
+        <span class="ty">Event</span>::<span class="ty">MainEventsCleared</span> =&gt; {
+            <span class="com"># Másodperces tick: timer lejárat + UI frissítés</span>
+        }
+        <span class="ty">Event</span>::<span class="ty">LoopDestroyed</span> =&gt; { awake.<span class="fn">stop</span>(); }
+        <span class="kw">_</span> =&gt; {}
+    }
+});</code></pre>
+
+<p>Itt látható a teljes architektúra működése. Néhány megfigyelés:</p>
+<ul>
+  <li>A <code>match event</code> több szintű mintaillesztés: <code>UserEvent(MenuEvent(ev))</code>
+  egyszerre bontja le a külső és belső enumot, és köti <code>ev</code>-t.</li>
+  <li>A <code>?</code> operátor itt is dolgozik — ha a <code>start</code> hibát ad, a
+  closure-ból (és a programból) propagálódik a hiba. De vigyázat: <code>main</code>
+  visszatérési típusa <code>()</code>, nem <code>Result</code>, így valójában egy
+  korai <code>return</code> történik (a hiba elnyelődik ebben a mintában).</li>
+  <li>A <code>MainEventsCleared</code> ág a "másodperces frissítés" helye. Itt három
+  lépés történik: (1) timer lejárat ellenőrzése, (2) ikon cseréje csak ha változott,
+  (3) tooltip és menü állapot frissítése. Az utóbbi kettő <b>cache</b>-et használ
+  (<code>last_tooltip</code>, <code>last_stop_enabled</code>), hogy csak valódi
+  változáskor hívjon drága UI API-t. Ez a Rust "kölcsönzés-alapú" tervezés gyakori
+  mintája.</li>
+</ul>
+
+<h3>Az "így frissítsünk csak ha kell" minta</h3>
+<pre><code><span class="kw">let</span> stop_enabled = app_state.<span class="fn">is_active</span>();
+<span class="kw">if</span> <span class="ty">Some</span>(stop_enabled) != last_stop_enabled {
+    last_stop_enabled = <span class="ty">Some</span>(stop_enabled);
+    menu_handles.stop.<span class="fn">set_enabled</span>(stop_enabled);
+}</code></pre>
+<p>Ez egy elegáns ötlet: <code>last_stop_enabled</code> egy <code>Option&lt;bool&gt;</code>
+— <code>None</code> jelenti, hogy még sosem frissítettünk (első iteráció). Csak akkor
+hívjuk meg <code>set_enabled</code>-et, ha <b>tényleg megváltozott</b> az érték. Ez
+csökkenti a felesleges UI hívásokat.</p>
+
+<div class="callout info">
+  <span class="label">Miért ilyen bonyolult a <code>main</code>?</span>
+  Mert a GUI event loop modell. Itt nincs "várakozás" blokkoló hívás — a loop mindig
+  fut, és az eseményeket dispatch-eli. A "tick" (másodperces frissítés) úgy valósul meg,
+  hogy <code>ControlFlow::WaitUntil</code>-lal kérjük a következő felébredést. Ez a
+  <code>tao</code> (cross-platform, eredetileg <code>winit</code> alapú) tipikus mintája.
+</div>
+
+<!-- ════════════════ 13 ════════════════ -->
+<h2 class="section" id="s13"><span class="num">13.</span>Lépés 7 — Fordítás, futtatás, tesztelés</h2>
+<p>Próbáld ki magad is! A projekt mappájából:</p>
+<div class="terminal"><span class="prompt">$</span> cargo run --release
+<span class="out">   Compiling keepawake v0.1.0
+    Finished release [optimized] target(s)
+     Running `target/release/keepawake`
+<span class="prompt">  (kávéscsésze ikon jelenik meg a menüsorban)</span></span></div>
+
+<p>Az aktív IOKit assertion ellenőrizhető egy másik terminálban:</p>
+<div class="terminal"><span class="prompt">$</span> pmset -g assertions | grep KeepAwake
+<span class="out">PreventUserIdleSystemSleep "KeepAwake" ...</span></div>
+
+<p>A tesztek futtatása:</p>
+<div class="terminal"><span class="prompt">$</span> cargo test
+<span class="out">running 8 tests
+test app_state::... ... ok
+test timer::tests::remaining_saturates_at_zero ... ok
+test icons::tests::frame_thresholds ... ok
+test result: ok. 8 passed</span></div>
+
+<p>És a HTML dokumentáció generálása a projekt összes moduljából:</p>
+<div class="terminal"><span class="prompt">$</span> cargo doc --open
+<span class="out">Generating documentation for keepawake + 47 dependencies
+<span class="prompt">  (megnyílik a böngészőben a target/doc/keepawake/index.html)</span></span></div>
+
+<!-- ════════════════ 14 ════════════════ -->
+<h2 class="section" id="s14"><span class="num">14.</span>Összegzés — mit tanultunk?</h2>
+<p>Végigmentünk egy valós Rust projekten, és közben megérintettük a nyelv
+legfontosabb fogalmait:</p>
+
+<table>
+  <tr><th>Téma</th><th>Hol láttuk</th><th>Fogalom</th></tr>
+  <tr><td>Alapvető szintaxis</td><td>Hello, Rust!</td><td><code>fn</code>, <code>println!</code>, makrók</td></tr>
+  <tr><td>Cargo &amp; TOML</td><td>Cargo.toml</td><td>függőségek, profilok</td></tr>
+  <tr><td>Modulrendszer</td><td>main.rs feje</td><td><code>mod</code>, <code>pub</code>, láthatóság</td></tr>
+  <tr><td>Enum &amp; pattern match</td><td>app_state.rs</td><td>adathordozó variánsok, <code>match</code></td></tr>
+  <tr><td>Struct &amp; impl</td><td>app_state.rs, timer.rs</td><td>mezők, metódusok, <code>&amp;self</code></td></tr>
+  <tr><td>Standard könyvtár</td><td>timer.rs</td><td><code>Duration</code>, <code>Instant</code></td></tr>
+  <tr><td>Tesztek</td><td>timer.rs, icons.rs</td><td><code>#[test]</code>, <code>assert!</code></td></tr>
+  <tr><td>Generikusok</td><td>icons.rs, awake.rs</td><td><code>HashMap&lt;K,V&gt;</code>, <code>Result&lt;T,E&gt;</code></td></tr>
+  <tr><td>Traits &amp; derive</td><td>icons.rs, awake.rs</td><td><code>#[derive(...)]</code>, <code>Drop</code>, <code>Default</code></td></tr>
+  <tr><td>Hibakezelés</td><td>awake.rs</td><td><code>Result</code>, <code>Option</code>, <code>?</code></td></tr>
+  <tr><td>FFI &amp; unsafe</td><td>awake.rs</td><td><code>extern "C"</code>, <code>unsafe</code>, nyers pointerek</td></tr>
+  <tr><td>Ownership &amp; closures</td><td>main.rs</td><td><code>move</code>, <code>&amp;mut</code>, birtoklás</td></tr>
+  <tr><td>Event loop &amp; GUI</td><td>main.rs</td><td><code>tao</code>, async-szerű eseménykezelés</td></tr>
+</table>
+
+<div class="callout tip">
+  <span class="label">Hol tovább?</span>
+  A hivatalos ingyenes tananyag: <a href="https://doc.rust-lang.org/book/" style="color:var(--accent)">The Rust Programming Language</a>
+  ("the Book"). A <a href="https://rustlings.com" style="color:var(--accent)">Rustlings</a>
+  interaktív gyakorló feladatsor. A KeepAwake projekted <code>README.md</code>-je és
+  <code>implementation.md</code>-je további részleteket ad a tervezési döntésekről.
+</div>
+
+<div class="callout info">
+  <span class="label">A legfontosabb lecke</span>
+  A Rust filozófiája: <b>a fordító a szövetségesed</b>. Ha nem fordul le, az nem
+  "rosszindulatú" hibaüzenet, hanem a rendszer figyelmeztet: "itt valami szivároghat,
+  vagy elfelejthetsz egy esetet". Tanuld meg olvasni a hibaüzeneteket — azok
+  tanítanak a nyelvről. A KeepAwake-ot egyszer lefordítod, és a <code>Drop</code>,
+  <code>Result</code>, mintaillesztés miatt biztonságosan fut: nem szivárog erőforrás,
+  nem omlik össze egy hiányzó eseten.
+</div>
+
+<p style="margin-top:40px; color:var(--muted); font-size:14px; text-align:center;">
+  Ez a tutorial a <code>KeepAwake</code> projekt (0.1.0, Rust 2021 edition) forráskódján alapul.
+  Sok sikert a Rust-tanuláshoz! ☕
+</p>
+
+</main>
+
+</div>
+</body>
+</html>
