@@ -98,6 +98,7 @@ fn main() {
     // változáskor hívjunk set_*-ot.
     let mut last_tooltip = String::new();
     let mut last_stop_enabled: Option<bool> = None;
+    let mut last_indefinite_enabled: Option<bool> = None;
 
     event_loop.run(move |event, _window_target, control_flow| {
         // Másodpercenként ébredünk a tick frissítéshez. A menu/tray event-ek
@@ -214,6 +215,15 @@ fn main() {
                 if Some(stop_enabled) != last_stop_enabled {
                     last_stop_enabled = Some(stop_enabled);
                     menu_handles.stop.set_enabled(stop_enabled);
+                }
+
+                // Az idő nélküli bekapcsolás ne legyen újra választható,
+                // ha már pont ez a mód aktív. Az időzített opciók szándékosan
+                // aktívak maradnak, hogy lehessen másik időtartamra váltani.
+                let indefinite_enabled = !matches!(app_state.awake_mode, AwakeMode::Indefinite);
+                if Some(indefinite_enabled) != last_indefinite_enabled {
+                    last_indefinite_enabled = Some(indefinite_enabled);
+                    menu_handles.indefinite.set_enabled(indefinite_enabled);
                 }
             }
 
