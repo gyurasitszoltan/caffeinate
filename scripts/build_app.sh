@@ -31,7 +31,32 @@ mkdir -p "${APP_DIR}/Contents/Resources"
 cp "${RELEASE_DIR}/${BIN_NAME}" "${APP_DIR}/Contents/MacOS/${BIN_NAME}"
 chmod +x "${APP_DIR}/Contents/MacOS/${BIN_NAME}"
 
-# 4. Info.plist — agent app, nincs dock/terminál
+# 4. App ikon (.icns) a Finder / app switcher számára.
+# A tray ikonoktól függetlenül a .app bundle-nek külön CFBundleIconFile kell,
+# különben macOS általános/üres alkalmazásikont mutathat.
+APP_ICON_NAME="${APP_NAME}.icns"
+ICON_SOURCE="assets/cup_4@2x.png"
+ICONSET_DIR="${APP_DIR}/Contents/Resources/${APP_NAME}.iconset"
+
+if [[ -f "${ICON_SOURCE}" ]] && command -v sips >/dev/null 2>&1 && command -v iconutil >/dev/null 2>&1; then
+  mkdir -p "${ICONSET_DIR}"
+  sips -z 16 16     "${ICON_SOURCE}" --out "${ICONSET_DIR}/icon_16x16.png" >/dev/null
+  sips -z 32 32     "${ICON_SOURCE}" --out "${ICONSET_DIR}/icon_16x16@2x.png" >/dev/null
+  sips -z 32 32     "${ICON_SOURCE}" --out "${ICONSET_DIR}/icon_32x32.png" >/dev/null
+  sips -z 64 64     "${ICON_SOURCE}" --out "${ICONSET_DIR}/icon_32x32@2x.png" >/dev/null
+  sips -z 128 128   "${ICON_SOURCE}" --out "${ICONSET_DIR}/icon_128x128.png" >/dev/null
+  sips -z 256 256   "${ICON_SOURCE}" --out "${ICONSET_DIR}/icon_128x128@2x.png" >/dev/null
+  sips -z 256 256   "${ICON_SOURCE}" --out "${ICONSET_DIR}/icon_256x256.png" >/dev/null
+  sips -z 512 512   "${ICON_SOURCE}" --out "${ICONSET_DIR}/icon_256x256@2x.png" >/dev/null
+  sips -z 512 512   "${ICON_SOURCE}" --out "${ICONSET_DIR}/icon_512x512.png" >/dev/null
+  sips -z 1024 1024 "${ICON_SOURCE}" --out "${ICONSET_DIR}/icon_512x512@2x.png" >/dev/null
+  iconutil -c icns "${ICONSET_DIR}" -o "${APP_DIR}/Contents/Resources/${APP_ICON_NAME}"
+  rm -rf "${ICONSET_DIR}"
+else
+  echo ">> figyelem: app ikon nem generálható (hiányzó ${ICON_SOURCE}, sips vagy iconutil)"
+fi
+
+# 5. Info.plist — agent app, nincs dock/terminál
 cat > "${APP_DIR}/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -49,6 +74,8 @@ cat > "${APP_DIR}/Contents/Info.plist" <<PLIST
   <string>0.1.0</string>
   <key>CFBundleExecutable</key>
   <string>${BIN_NAME}</string>
+  <key>CFBundleIconFile</key>
+  <string>${APP_ICON_NAME}</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>LSMinimumSystemVersion</key>
@@ -65,9 +92,9 @@ cat > "${APP_DIR}/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# 5. Ikon (opcionális): a cup_4@2x a leglátványosabb app ikon.
-# PkgInfo (APPL magic) a Finder gyors felismeréséhez.
+# 6. PkgInfo (APPL magic) a Finder gyors felismeréséhez.
 printf "APPL????" > "${APP_DIR}/Contents/PkgInfo"
+touch "${APP_DIR}"
 
 echo ">> kész: ${APP_DIR}"
 echo "   indítás: open ${APP_DIR}"
